@@ -1,0 +1,16 @@
+{
+    "name": "Stop Doomscrolling Chrome Extension",
+    "version": "1.0.0",
+    "description": "A Chrome Extension that helps you stop doomscrolling",
+    "manifest_version": 3,
+    "author": "David Katunin",
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "scripting"
+    ],
+    "action":{
+        "default_popup": "index.html",
+        "default_title": "Stop Doomscrolling Chrome Extension"
+    }
+}
