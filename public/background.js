@@ -5,15 +5,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.action.onClicked.addListener(async (tab) => {
   try {
     const title = tab?.title ?? 'Unknown';
-    // Prefer native notifications; fallback to alert in-page via executeScript
-    if (chrome.notifications) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'vite.svg',
-        title: 'Current Tab Title',
-        message: title,
-      });
-    } else if (tab?.id) {
+    if (tab?.id) {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: (t) => alert(`Current Tab Title: ${t}`),
@@ -24,3 +16,5 @@ chrome.action.onClicked.addListener(async (tab) => {
     console.error('Failed to show title', err);
   }
 });
+
+

@@ -1,34 +1,27 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [title, setTitle] = useState<string>('')
+
+  useEffect(() => {
+    const hasChromeTabs = typeof chrome !== 'undefined' && !!chrome.tabs?.query
+    if (!hasChromeTabs) {
+      setTitle('Open this as an extension popup to view the tab title')
+      return
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const current = tabs[0]
+      setTitle(current?.title ?? 'Unknown')
+    })
+  }, [])
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="p-4 min-w-[260px]">
+      <h2 className="m-0 mb-2 text-lg font-semibold">Current Tab Title</h2>
+      <div className="break-words">{title || 'Loading...'}</div>
+    </div>
   )
 }
 

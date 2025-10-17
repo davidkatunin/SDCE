@@ -12,6 +12,10 @@ export default defineConfig({
         {
           src: 'public/manifest.json',
           dest: '.',
+        },
+        {
+          src: 'public/background.js',
+          dest: '.',
         }
       ],
     }),
@@ -21,6 +25,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
+        
       },
     },
   },
