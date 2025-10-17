@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import './App.css'
 
 function App() {
   const [title, setTitle] = useState<string>('')
@@ -18,7 +17,7 @@ function App() {
   }, [])
 
   return (
-    <div className="p-4 min-w-[260px]">
+    <div className="p-4 w-[350px] h-[200px] bg-[#040404]">
       <h2 className="m-0 mb-2 text-lg font-semibold">Current Tab Title</h2>
       <div className="break-words">{title || 'Loading...'}</div>
     </div>
