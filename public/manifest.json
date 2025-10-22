@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "React Chrome Extension",
+  "name": "Stop Doomscrolling Chrome Extension",
   "version": "1.0.0",
-  "description": "A simple React app as a Chrome extension",
+  "description": "A Chrome extension to help get rid of distractions and end doomscrolling",
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
@@ -10,5 +10,12 @@
   "action": {
     "default_popup": "index.html"
   },
-  "permissions": ["tabs", "activeTab", "storage"]
+  "permissions": ["tabs", "activeTab", "storage"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/contentScript.ts"],
+      "run_at": "document_start"
+    }
+  ]
 }

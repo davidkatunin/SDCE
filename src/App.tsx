@@ -46,7 +46,6 @@ function App() {
         setIsPaused(true);
         setPauseEndTime(data.pauseEndTime);
       }
-      console.log('Loaded from storage:', data);
     });
   }, []);
   

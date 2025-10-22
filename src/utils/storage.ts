@@ -45,7 +45,6 @@ export async function initializeStorage(): Promise<ExtensionStorage> {
             chrome.storage.local.set(merged);
         }
 
-        console.log("Loaded storage:", merged);
         resolve(merged);
         });
     });
@@ -57,7 +56,6 @@ export async function updateStorage(partialData: Partial<ExtensionStorage>) {
         if (chrome.runtime.lastError) {
             reject(chrome.runtime.lastError);
         } else {
-            console.log("Saved to storage:", partialData);
             resolve();
         }
         });
