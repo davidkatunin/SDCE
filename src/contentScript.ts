@@ -27,8 +27,8 @@ function shouldBlockSite(hostname: string, pathname: string) {
 }
 
 function checkAndInject() {
-  chrome.storage.local.get(["isEnabled", "blockedSites"], (data) => {
-    const { isEnabled, blockedSites } = data;
+  chrome.storage.local.get(["isEnabled", "blockedSites", "isPaused"], (data) => {
+    const { isEnabled, blockedSites, isPaused } = data;
     if (!isEnabled) {
       removeOverlay();
       return;
@@ -46,7 +46,7 @@ function checkAndInject() {
       return;
     }
 
-    if (shouldBlockSite(hostname, pathname)) {
+    if (shouldBlockSite(hostname, pathname) && !isPaused) {
       if (!currentOverlay) {
         currentOverlay = injectBlockedSiteOverlay(siteName);
       }

@@ -13,7 +13,7 @@ export interface ExtensionStorage {
 
 export const DEFAULT_STORAGE: ExtensionStorage = {
     isEnabled: true,
-    dailyGoal: 30,
+    dailyGoal: 0,
     pauseWhenGoalReached: false,
     blockedSites: {
         Instagram: false,
