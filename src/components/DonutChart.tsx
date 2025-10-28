@@ -1,5 +1,5 @@
 interface DonutChartProps {
-    progress: number; // 0-100
+    progress: number;
     size?: number;
     strokeWidth?: number;
   }

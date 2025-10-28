@@ -70,11 +70,18 @@ function App() {
   // ============= Handle pause/resume =============
   const handlePause = (minutes: number) => {
     const end = Date.now() + minutes * 60 * 1000;
+    const initialDiff = end - Date.now();
+    const initialMinutes = Math.floor(initialDiff / 60000);
+    const initialSeconds = Math.floor((initialDiff % 60000) / 1000);
+    setRemainingTime(`${initialMinutes}:${initialSeconds.toString().padStart(2, '0')}`);
+  
     setPauseEndTime(end);
     setIsPaused(true);
     setShowSettings(false);
+  
     chrome.storage.local.set({ pauseEndTime: end, isPaused: true });
   };
+  
 
   const handleResume = () => {
     setIsPaused(false);
@@ -87,22 +94,21 @@ function App() {
   // ============= Timer countdown =============
   useEffect(() => {
     if (!isPaused || !pauseEndTime) return;
-
-    const interval = setInterval(() => {
+  
+    const updateTime = () => {
       const now = Date.now();
       const diff = pauseEndTime - now;
-
       if (diff <= 0) {
         handleResume();
-        clearInterval(interval);
         return;
       }
-
       const minutes = Math.floor(diff / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
       setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-    }, 1000);
-
+    };
+  
+    updateTime(); // 🔹 run once immediately
+    const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [isPaused, pauseEndTime]);
 

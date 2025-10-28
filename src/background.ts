@@ -1,76 +1,69 @@
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Extension installed');
+  restoreAlarm();
 });
 
-chrome.action.onClicked.addListener(async (tab) => {
-  try {
-    const title = tab?.title ?? 'Unknown';
-    // Prefer native notifications; fallback to alert in-page via executeScript
-    if (chrome.notifications) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'vite.svg',
-        title: 'Current Tab Title',
-        message: title,
-      });
-    } else if (tab?.id) {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: (t) => alert(`Current Tab Title: ${t}`),
-        args: [title],
-      });
+chrome.runtime.onStartup.addListener(() => {
+  restoreAlarm();
+});
+
+function restoreAlarm() {
+  chrome.storage.local.get(["isPaused", "pauseEndTime"], ({ isPaused, pauseEndTime }) => {
+    if (isPaused && pauseEndTime) {
+      const now = Date.now();
+      const timeLeft = pauseEndTime - now;
+      if (timeLeft > 0) {
+        chrome.alarms.create("pauseExpiry", { when: pauseEndTime });
+      } else {
+        resumeExtension();
+      }
     }
-  } catch (err) {
-    console.error('Failed to show title', err);
-  }
-});
-
-function checkIfPaused(): Promise<boolean> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['isPaused'], (result) => {
-      const paused = Boolean(result.isPaused);
-      resolve(paused);
-    });
   });
 }
 
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.isEnabled) {
-    const newState = changes.isEnabled.newValue;
-    checkIfPaused().then((isPaused) => {
-      let shouldShow = !!newState && !isPaused;
-      chrome.action.setIcon({
-        path: shouldShow
-          ? { "16": "icons/active16.png",
-              "32": "icons/active32.png",
-              "48": "icons/active48.png",
-              "128": "icons/active128.png" 
-            }
-          : { "16": "icons/inactive16.png",
-              "32": "icons/inactive32.png",
-              "48": "icons/inactive48.png",
-              "128": "icons/inactive128.png"
-            }
-      });
+function resumeExtension() {
+  chrome.storage.local.set({ isPaused: false, pauseEndTime: null });
+  chrome.alarms.clear("pauseExpiry");
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "pauseExpiry") {
+    resumeExtension();
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+
+  if (changes.isPaused?.newValue === true && changes.pauseEndTime?.newValue) {
+    chrome.alarms.create("pauseExpiry", { when: changes.pauseEndTime.newValue });
+  }
+
+  if (changes.isPaused?.newValue === false) {
+    chrome.alarms.clear("pauseExpiry");
+  }
+
+  if (changes.isEnabled || changes.isPaused) {
+    chrome.storage.local.get(["isEnabled", "isPaused"], ({ isEnabled, isPaused }) => {
+      updateIcon(isEnabled, isPaused);
     });
   }
 });
 
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.isPaused) {
-    const newState = changes.isPaused.newValue;
-    chrome.action.setIcon({
-      path: newState
-        ? { "16": "icons/inactive16.png",
-            "32": "icons/inactive32.png",
-            "48": "icons/inactive48.png",
-            "128": "icons/inactive128.png"
-         }
-        : { "16": "icons/active16.png",
-            "32": "icons/active32.png",
-            "48": "icons/active48.png",
-            "128": "icons/active128.png" 
-          }
-    });
-  }
-});
+function updateIcon(isEnabled: boolean, isPaused: boolean) {
+  const active = !!isEnabled && !isPaused;
+  chrome.action.setIcon({
+    path: active
+      ? {
+          "16": "icons/active16.png",
+          "32": "icons/active32.png",
+          "48": "icons/active48.png",
+          "128": "icons/active128.png",
+        }
+      : {
+          "16": "icons/inactive16.png",
+          "32": "icons/inactive32.png",
+          "48": "icons/inactive48.png",
+          "128": "icons/inactive128.png",
+        },
+  });
+}

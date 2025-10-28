@@ -87,7 +87,7 @@ export function SettingsPopup({
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-gray-400 text-sm mb-1">Pause blocking for:</p>
           <div className="flex gap-2">
-            {[15, 30, 60].map((m) => (
+            {[.1, 30, 60].map((m) => (
               <button
                 key={m}
                 onClick={() => onPause(m)}

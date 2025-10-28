@@ -10,7 +10,7 @@
   "action": {
     "default_popup": "index.html"
   },
-  "permissions": ["tabs", "activeTab", "storage"],
+  "permissions": ["tabs", "activeTab", "storage", "alarms"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
