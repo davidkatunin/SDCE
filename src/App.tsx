@@ -41,10 +41,11 @@ function App() {
       setMinOn(data.minOn);
       setWeeklyChange(data.weeklyChange);
       setIsTrending(data.isTrending);
-  
       if (data.isPaused && data.pauseEndTime && data.pauseEndTime > Date.now()) {
         setIsPaused(true);
         setPauseEndTime(data.pauseEndTime);
+      } else {
+        setIsPaused(false);
       }
     });
   }, []);
@@ -79,7 +80,8 @@ function App() {
     setIsPaused(false);
     setPauseEndTime(null);
     setRemainingTime('00:00');
-    chrome.storage.local.remove(['pauseEndTime', 'isPaused']);
+    chrome.storage.local.set({ isPaused: false });
+    chrome.storage.local.remove(['pauseEndTime']);
   };
 
   // ============= Timer countdown =============

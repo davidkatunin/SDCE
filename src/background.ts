@@ -24,3 +24,53 @@ chrome.action.onClicked.addListener(async (tab) => {
     console.error('Failed to show title', err);
   }
 });
+
+function checkIfPaused(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['isPaused'], (result) => {
+      const paused = Boolean(result.isPaused);
+      resolve(paused);
+    });
+  });
+}
+
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.isEnabled) {
+    const newState = changes.isEnabled.newValue;
+    checkIfPaused().then((isPaused) => {
+      let shouldShow = !!newState && !isPaused;
+      chrome.action.setIcon({
+        path: shouldShow
+          ? { "16": "icons/active16.png",
+              "32": "icons/active32.png",
+              "48": "icons/active48.png",
+              "128": "icons/active128.png" 
+            }
+          : { "16": "icons/inactive16.png",
+              "32": "icons/inactive32.png",
+              "48": "icons/inactive48.png",
+              "128": "icons/inactive128.png"
+            }
+      });
+    });
+  }
+});
+
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.isPaused) {
+    const newState = changes.isPaused.newValue;
+    chrome.action.setIcon({
+      path: newState
+        ? { "16": "icons/inactive16.png",
+            "32": "icons/inactive32.png",
+            "48": "icons/inactive48.png",
+            "128": "icons/inactive128.png"
+         }
+        : { "16": "icons/active16.png",
+            "32": "icons/active32.png",
+            "48": "icons/active48.png",
+            "128": "icons/active128.png" 
+          }
+    });
+  }
+});
