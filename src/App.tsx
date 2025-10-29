@@ -20,10 +20,10 @@ function App() {
   const [weeklyChange, setWeeklyChange] = useState(0);
   const [pauseWhenGoalReached, setPauseWhenGoalReached] = useState(false);
   const [blockedSites, setBlockedSites] = useState<ExtensionStorage["blockedSites"]>({
-    Instagram: false,
-    Youtube: false,
-    Facebook: false,
-    TikTok: false,
+    instagram: false,
+    youtube: false,
+    facebook: false,
+    tiktok: false,
   });
   const [showSettings, setShowSettings] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -38,7 +38,7 @@ function App() {
       setPauseWhenGoalReached(data.pauseWhenGoalReached);
       setBlockedSites(data.blockedSites);
       setDayStreak(data.dayStreak);
-      setMinOn(data.minOn);
+      setMinOn(data.minOn || 0);
       setWeeklyChange(data.weeklyChange);
       setIsTrending(data.isTrending);
       if (data.isPaused && data.pauseEndTime && data.pauseEndTime > Date.now()) {
@@ -107,7 +107,7 @@ function App() {
       setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
     };
   
-    updateTime(); // 🔹 run once immediately
+    updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [isPaused, pauseEndTime]);
@@ -120,15 +120,25 @@ function App() {
   };  
 
   // ============= Demo data for chart =============
-  const weeklyData = [
-    { day: "Mon", minutes: 45 },
-    { day: "Tue", minutes: 62 },
-    { day: "Wed", minutes: 58 },
-    { day: "Thu", minutes: 73 },
-    { day: "Fri", minutes: 81 },
-    { day: "Sat", minutes: 92 },
-    { day: "Sun", minutes: 87 },
-  ];
+  const [weeklyData, setWeeklyData] = useState([
+    { day: "Mon", minutes: 0 },
+    { day: "Tue", minutes: 0 },
+    { day: "Wed", minutes: 0 },
+    { day: "Thu", minutes: 0 },
+    { day: "Fri", minutes: 0 },
+    { day: "Sat", minutes: 0 },
+    { day: "Sun", minutes: 0 },
+  ]);
+  
+  useEffect(() => {
+    const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
+      if (changes.minOn) setMinOn(changes.minOn.newValue);
+      if (changes.weeklyData) setWeeklyData(changes.weeklyData.newValue);
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
+  }, []);
+  
 
   // ============= Settings modal handlers =============
   const handleOpenSettings = () => setShowSettings(true);
@@ -202,7 +212,11 @@ function App() {
                 )}
               </div>
             </div>
-            <DonutChart progress={dailyGoal ? (minOn / dailyGoal) : 0} size={70} strokeWidth={6} />
+            <DonutChart
+              progress={dailyGoal ? Math.min((minOn / dailyGoal) * 100, 100) : 0}
+              size={70}
+              strokeWidth={6}
+            />
           </div>
 
           {/* Weekly chart */}
@@ -245,10 +259,10 @@ function App() {
               <SlidersHorizontal color='gold' size={15}/>
             </div>
             <div className="w-full flex flex-col gap-1 pb-3">
-              <SiteToggle siteName="Instagram" siteIcon={<Instagram color='white' size={18}/>} isBlocked={blockedSites.Instagram} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="Youtube" siteIcon={<Youtube color='white' size={18}/>} isBlocked={blockedSites.Youtube} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="Facebook" siteIcon={<Facebook color='white' size={18}/>} isBlocked={blockedSites.Facebook} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="TikTok" siteIcon={<Music2 color='white' size={18}/>} isBlocked={blockedSites.TikTok} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="instagram" siteIcon={<Instagram color='white' size={18}/>} isBlocked={blockedSites.instagram} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="youtube" siteIcon={<Youtube color='white' size={18}/>} isBlocked={blockedSites.youtube} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="facebook" siteIcon={<Facebook color='white' size={18}/>} isBlocked={blockedSites.facebook} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="tiktok" siteIcon={<Music2 color='white' size={18}/>} isBlocked={blockedSites.tiktok} onToggle={handleSiteToggle} />
             </div>
           </div>
         </div>

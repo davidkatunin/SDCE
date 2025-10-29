@@ -9,6 +9,18 @@ function removeOverlay() {
   }
 }
 
+export function safeGet(keys: string[], callback: (data: any) => void) {
+  try {
+    if (!chrome?.runtime?.id) {
+      console.warn("Extension context invalidated, skipping storage call");
+      return;
+    }
+    chrome.storage.local.get(keys, callback);
+  } catch (err) {
+    console.warn("Failed to access chrome.storage:", err);
+  }
+}
+
 function pathStartsWithAny(pathname: string, prefixes: string[]) {
   const clean = pathname.split(/[?#]/)[0].toLowerCase();
   return prefixes.some(prefix => clean.startsWith(prefix.toLowerCase()));
@@ -27,7 +39,7 @@ function shouldBlockSite(hostname: string, pathname: string) {
 }
 
 function checkAndInject() {
-  chrome.storage.local.get(["isEnabled", "blockedSites", "isPaused"], (data) => {
+  safeGet(["isEnabled", "blockedSites", "isPaused"], (data) => {
     const { isEnabled, blockedSites, isPaused } = data;
     if (!isEnabled) {
       removeOverlay();
@@ -60,14 +72,16 @@ checkAndInject();
 
 (() => {
   let lastUrl = location.href;
-
   const observer = new MutationObserver(() => {
     const currentUrl = location.href;
     if (currentUrl !== lastUrl) {
       lastUrl = currentUrl;
-      setTimeout(checkAndInject, 250);
+      if (chrome?.runtime?.id) {
+        setTimeout(checkAndInject, 250);
+      }
     }
   });
 
   observer.observe(document, { subtree: true, childList: true });
+  window.addEventListener("beforeunload", () => observer.disconnect());
 })();

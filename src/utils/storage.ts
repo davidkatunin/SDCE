@@ -5,6 +5,7 @@ export interface ExtensionStorage {
     blockedSites: Record<string, boolean>;
     pauseEndTime: number | null;
     isPaused: boolean;
+    weeklyData: { day: string; minutes: number }[];
     dayStreak: number;
     minOn: number;
     weeklyChange: number;
@@ -16,11 +17,12 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
     dailyGoal: 0,
     pauseWhenGoalReached: false,
     blockedSites: {
-        Instagram: false,
-        Youtube: false,
-        Facebook: false,
-        TikTok: false,
+        instagram: false,
+        youtube: false,
+        facebook: false,
+        tiktok: false,
     },
+    weeklyData: [],
     pauseEndTime: null,
     isPaused: false,
     dayStreak: 0,
