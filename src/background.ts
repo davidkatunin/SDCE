@@ -54,7 +54,9 @@ function scheduleMidnightReset() {
 
 function resetDailyStats() {
   chrome.storage.local.get(["minOn", "weeklyData"], ({ minOn = 0, weeklyData = [] }) => {
-    const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
+    const today = new Date();
+    const todayName = today.toLocaleDateString("en-US", { weekday: "short" });
+    const isMonday = today.getDay() === 1;
 
     const newWeek = [
       { day: "Mon", minutes: 0 },
@@ -66,13 +68,15 @@ function resetDailyStats() {
       { day: "Sun", minutes: 0 },
     ];
 
-    for (const d of newWeek) {
-      const match = weeklyData.find((w: { day: string; minutes: number }) => w.day === d.day);
-      if (match) d.minutes = match.minutes;
-    }
+    if (!isMonday) {
+      for (const d of newWeek) {
+        const match = weeklyData.find((w: { day: string; minutes: number }) => w.day === d.day);
+        if (match) d.minutes = match.minutes;
+      }
 
-    const todayIndex = newWeek.findIndex(d => d.day === todayName);
-    if (todayIndex >= 0) newWeek[todayIndex].minutes = minOn;
+      const todayIndex = newWeek.findIndex((d) => d.day === todayName);
+      if (todayIndex >= 0) newWeek[todayIndex].minutes = minOn;
+    }
 
     chrome.storage.local.set({
       weeklyData: newWeek,
@@ -110,13 +114,40 @@ function updateIconFromStorage() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   switch (alarm.name) {
     case "tracking": {
-      const data = await chrome.storage.local.get(["timeTracked", "minOn"]);
-      await chrome.storage.local.set({
-        timeTracked: (data.timeTracked || 0) + 1,
-        minOn: (data.minOn || 0) + 1,
-      });
+      const data = await chrome.storage.local.get(["timeTracked", "minOn", "weeklyData"]);
+      const timeTracked = (data.timeTracked || 0) + 1;
+      const minOn = (data.minOn || 0) + 1;
+    
+      const defaultWeek = [
+        { day: "Mon", minutes: 0 },
+        { day: "Tue", minutes: 0 },
+        { day: "Wed", minutes: 0 },
+        { day: "Thu", minutes: 0 },
+        { day: "Fri", minutes: 0 },
+        { day: "Sat", minutes: 0 },
+        { day: "Sun", minutes: 0 },
+      ];
+    
+      let weeklyData: { day: string; minutes: number }[] = Array.isArray(data.weeklyData) && data.weeklyData.length > 0
+        ? data.weeklyData
+        : defaultWeek;
+    
+      for (const d of defaultWeek) {
+        if (!weeklyData.some((w) => w.day === d.day)) {
+          weeklyData.push(d);
+        }
+      }
+    
+      const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+      const dayIndex = weeklyData.findIndex((d) => d.day === today);
+      if (dayIndex >= 0) {
+        weeklyData[dayIndex].minutes = minOn;
+      }
+    
+      await chrome.storage.local.set({ timeTracked, minOn, weeklyData });
       break;
     }
+            
 
     case "pauseExpiry":
       resumeExtension();

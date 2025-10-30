@@ -41,6 +41,16 @@ function App() {
       setMinOn(data.minOn || 0);
       setWeeklyChange(data.weeklyChange);
       setIsTrending(data.isTrending);
+      setWeeklyData(data.weeklyData || [
+        { day: "Mon", minutes: 0 },
+        { day: "Tue", minutes: 0 },
+        { day: "Wed", minutes: 0 },
+        { day: "Thu", minutes: 0 },
+        { day: "Fri", minutes: 0 },
+        { day: "Sat", minutes: 0 },
+        { day: "Sun", minutes: 0 },
+      ]);
+      
       if (data.isPaused && data.pauseEndTime && data.pauseEndTime > Date.now()) {
         setIsPaused(true);
         setPauseEndTime(data.pauseEndTime);
@@ -133,7 +143,12 @@ function App() {
   useEffect(() => {
     const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
       if (changes.minOn) setMinOn(changes.minOn.newValue);
-      if (changes.weeklyData) setWeeklyData(changes.weeklyData.newValue);
+      if (changes.weeklyData) {
+        const newWeekly = Array.isArray(changes.weeklyData.newValue)
+          ? [...changes.weeklyData.newValue]
+          : [];
+        setWeeklyData(newWeekly);
+      }      
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
