@@ -147,7 +147,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       await chrome.storage.local.set({ timeTracked, minOn, weeklyData });
       break;
     }
-            
 
     case "pauseExpiry":
       resumeExtension();
@@ -163,7 +162,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
 
-  // Pause alarm management
   if (changes.isPaused?.newValue === true && changes.pauseEndTime?.newValue) {
     chrome.alarms.create("pauseExpiry", { when: changes.pauseEndTime.newValue });
   } else if (changes.isPaused?.newValue === false) {

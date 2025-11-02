@@ -20,10 +20,10 @@ function App() {
   const [weeklyChange, setWeeklyChange] = useState(0);
   const [pauseWhenGoalReached, setPauseWhenGoalReached] = useState(false);
   const [blockedSites, setBlockedSites] = useState<ExtensionStorage["blockedSites"]>({
-    instagram: false,
-    youtube: false,
-    facebook: false,
-    tiktok: false,
+    Instagram: false,
+    YouTube: false,
+    Facebook: false,
+    TikTok: false,
   });
   const [showSettings, setShowSettings] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -274,10 +274,10 @@ function App() {
               <SlidersHorizontal color='gold' size={15}/>
             </div>
             <div className="w-full flex flex-col gap-1 pb-3">
-              <SiteToggle siteName="instagram" siteIcon={<Instagram color='white' size={18}/>} isBlocked={blockedSites.instagram} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="youtube" siteIcon={<Youtube color='white' size={18}/>} isBlocked={blockedSites.youtube} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="facebook" siteIcon={<Facebook color='white' size={18}/>} isBlocked={blockedSites.facebook} onToggle={handleSiteToggle} />
-              <SiteToggle siteName="tiktok" siteIcon={<Music2 color='white' size={18}/>} isBlocked={blockedSites.tiktok} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="Instagram" siteIcon={<Instagram color='white' size={18}/>} isBlocked={blockedSites.Instagram} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="YouTube" siteIcon={<Youtube color='white' size={18}/>} isBlocked={blockedSites.YouTube} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="Facebook" siteIcon={<Facebook color='white' size={18}/>} isBlocked={blockedSites.Facebook} onToggle={handleSiteToggle} />
+              <SiteToggle siteName="TikTok" siteIcon={<Music2 color='white' size={18}/>} isBlocked={blockedSites.TikTok} onToggle={handleSiteToggle} />
             </div>
           </div>
         </div>
