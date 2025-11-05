@@ -1,11 +1,30 @@
 chrome.runtime.onInstalled.addListener(initBackground);
 chrome.runtime.onStartup.addListener(initBackground);
 
-function initBackground() {
+async function initBackground() {
+  await checkMissedReset();
+  initializeWeeklyDataIfNeeded();
   restorePauseAlarm();
   scheduleMidnightReset();
   restoreTrackingAlarm();
   updateIconFromStorage();
+}
+
+function initializeWeeklyDataIfNeeded() {
+  chrome.storage.local.get(["weeklyData"], ({ weeklyData }) => {
+    if (!Array.isArray(weeklyData) || weeklyData.length === 0) {
+      const defaultWeek = [
+        { day: "Mon", minutes: 0 },
+        { day: "Tue", minutes: 0 },
+        { day: "Wed", minutes: 0 },
+        { day: "Thu", minutes: 0 },
+        { day: "Fri", minutes: 0 },
+        { day: "Sat", minutes: 0 },
+        { day: "Sun", minutes: 0 },
+      ];
+      chrome.storage.local.set({ weeklyData: defaultWeek });
+    }
+  });
 }
 
 function restorePauseAlarm() {
@@ -53,38 +72,54 @@ function scheduleMidnightReset() {
 }
 
 function resetDailyStats() {
-  chrome.storage.local.get(["minOn", "weeklyData"], ({ minOn = 0, weeklyData = [] }) => {
-    const today = new Date();
-    const todayName = today.toLocaleDateString("en-US", { weekday: "short" });
-    const isMonday = today.getDay() === 1;
+  chrome.storage.local.get(
+    ["minOn", "dailyGoal", "weeklyData", "dayStreak"],
+    ({ minOn = 0, dailyGoal = 0, weeklyData = [], dayStreak = 0 }) => {
+      const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
-    const newWeek = [
-      { day: "Mon", minutes: 0 },
-      { day: "Tue", minutes: 0 },
-      { day: "Wed", minutes: 0 },
-      { day: "Thu", minutes: 0 },
-      { day: "Fri", minutes: 0 },
-      { day: "Sat", minutes: 0 },
-      { day: "Sun", minutes: 0 },
-    ];
+      const newWeek = [
+        { day: "Mon", minutes: 0 },
+        { day: "Tue", minutes: 0 },
+        { day: "Wed", minutes: 0 },
+        { day: "Thu", minutes: 0 },
+        { day: "Fri", minutes: 0 },
+        { day: "Sat", minutes: 0 },
+        { day: "Sun", minutes: 0 },
+      ];
 
-    if (!isMonday) {
       for (const d of newWeek) {
         const match = weeklyData.find((w: { day: string; minutes: number }) => w.day === d.day);
         if (match) d.minutes = match.minutes;
       }
 
-      const todayIndex = newWeek.findIndex((d) => d.day === todayName);
+      const todayIndex = newWeek.findIndex(d => d.day === todayName);
       if (todayIndex >= 0) newWeek[todayIndex].minutes = minOn;
-    }
 
-    chrome.storage.local.set({
-      weeklyData: newWeek,
-      minOn: 0,
-      lastUpdated: new Date().toLocaleDateString(),
-    });
-  });
+      let newStreak = dayStreak;
+      if (minOn >= dailyGoal && dailyGoal > 0) {
+        newStreak += 1;
+      } else {
+        newStreak = 0;
+      }
+
+      const now = new Date();
+      const isSunday = now.getDay() === 0;
+      const nextDay = new Date(now);
+      nextDay.setDate(now.getDate() + 1);
+      const isNextDayMonday = nextDay.getDay() === 1;
+
+      const shouldResetWeek = isSunday && isNextDayMonday;
+
+      chrome.storage.local.set({
+        weeklyData: shouldResetWeek ? newWeek.map(d => ({ ...d, minutes: 0 })) : newWeek,
+        minOn: 0,
+        dayStreak: newStreak,
+        lastUpdated: new Date().toLocaleDateString(),
+      });
+    }
+  );
 }
+
 
 function updateIcon(isEnabled: boolean, isPaused: boolean) {
   const active = !!isEnabled && !isPaused;
@@ -114,10 +149,18 @@ function updateIconFromStorage() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   switch (alarm.name) {
     case "tracking": {
+      const now = new Date();
+      const currentMinute = now.getMinutes();
+      const currentHour = now.getHours();
+
+      if (currentHour === 0 && currentMinute === 0) {
+        return;
+      }
+
       const data = await chrome.storage.local.get(["timeTracked", "minOn", "weeklyData"]);
       const timeTracked = (data.timeTracked || 0) + 1;
       const minOn = (data.minOn || 0) + 1;
-    
+
       const defaultWeek = [
         { day: "Mon", minutes: 0 },
         { day: "Tue", minutes: 0 },
@@ -127,23 +170,24 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         { day: "Sat", minutes: 0 },
         { day: "Sun", minutes: 0 },
       ];
-    
-      let weeklyData: { day: string; minutes: number }[] = Array.isArray(data.weeklyData) && data.weeklyData.length > 0
-        ? data.weeklyData
-        : defaultWeek;
-    
+
+      let weeklyData: { day: string; minutes: number }[] =
+        Array.isArray(data.weeklyData) && data.weeklyData.length > 0
+          ? data.weeklyData
+          : defaultWeek;
+
       for (const d of defaultWeek) {
         if (!weeklyData.some((w) => w.day === d.day)) {
           weeklyData.push(d);
         }
       }
-    
-      const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
+
+      const today = now.toLocaleDateString("en-US", { weekday: "short" });
       const dayIndex = weeklyData.findIndex((d) => d.day === today);
       if (dayIndex >= 0) {
         weeklyData[dayIndex].minutes = minOn;
       }
-    
+
       await chrome.storage.local.set({ timeTracked, minOn, weeklyData });
       break;
     }
@@ -158,6 +202,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       break;
   }
 });
+
+async function checkMissedReset() {
+  const { lastUpdated } = await chrome.storage.local.get("lastUpdated");
+
+  const today = new Date().toLocaleDateString();
+
+  if (lastUpdated !== today) {
+    resetDailyStats();
+  }
+}
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;

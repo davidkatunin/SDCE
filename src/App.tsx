@@ -148,12 +148,14 @@ function App() {
           ? [...changes.weeklyData.newValue]
           : [];
         setWeeklyData(newWeekly);
-      }      
+      }
+      if (changes.dayStreak) {
+        setDayStreak(changes.dayStreak.newValue);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
-  
 
   // ============= Settings modal handlers =============
   const handleOpenSettings = () => setShowSettings(true);
