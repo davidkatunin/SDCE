@@ -71,53 +71,65 @@ function scheduleMidnightReset() {
   chrome.alarms.create("midnightReset", { when: nextMidnight });
 }
 
-function resetDailyStats() {
-  chrome.storage.local.get(
-    ["minOn", "dailyGoal", "weeklyData", "dayStreak"],
-    ({ minOn = 0, dailyGoal = 0, weeklyData = [], dayStreak = 0 }) => {
-      const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
+async function resetDailyStats(): Promise<void> {
+  chrome.alarms.clear("tracking");
+  return new Promise((resolve) => {
+    chrome.storage.local.get(
+      ["minOn", "dailyGoal", "weeklyData", "dayStreak", "lastUpdated"],
+      ({ minOn = 0, dailyGoal = 0, weeklyData = [], dayStreak = 0 }) => {
+        const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
-      const newWeek = [
-        { day: "Mon", minutes: 0 },
-        { day: "Tue", minutes: 0 },
-        { day: "Wed", minutes: 0 },
-        { day: "Thu", minutes: 0 },
-        { day: "Fri", minutes: 0 },
-        { day: "Sat", minutes: 0 },
-        { day: "Sun", minutes: 0 },
-      ];
+        const defaultWeek = [
+          { day: "Mon", minutes: 0 },
+          { day: "Tue", minutes: 0 },
+          { day: "Wed", minutes: 0 },
+          { day: "Thu", minutes: 0 },
+          { day: "Fri", minutes: 0 },
+          { day: "Sat", minutes: 0 },
+          { day: "Sun", minutes: 0 },
+        ];
 
-      for (const d of newWeek) {
-        const match = weeklyData.find((w: { day: string; minutes: number }) => w.day === d.day);
-        if (match) d.minutes = match.minutes;
+        const normalizedWeek: { day: string; minutes: number }[] = [...defaultWeek];
+        if (Array.isArray(weeklyData)) {
+          for (const w of weeklyData) {
+            const idx = normalizedWeek.findIndex(d => d.day === w.day);
+            if (idx >= 0) normalizedWeek[idx].minutes = w.minutes ?? 0;
+          }
+        }
+
+        const todayIndex = normalizedWeek.findIndex(d => d.day === todayName);
+        if (todayIndex >= 0) normalizedWeek[todayIndex].minutes = minOn;
+
+        let newStreak = dayStreak ?? 0;
+        if (dailyGoal > 0 && (minOn >= dailyGoal)) {
+          newStreak = (dayStreak || 0) + 1;
+        } else {
+          newStreak = dayStreak || 0;
+        }
+
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const isNextDayMonday = tomorrow.getDay() === 1;
+        const finalWeekly = isNextDayMonday
+          ? normalizedWeek.map(d => ({ ...d, minutes: 0 }))
+          : normalizedWeek;
+
+        const todayString = new Date().toLocaleDateString();
+
+        chrome.storage.local.set({
+          weeklyData: finalWeekly,
+          minOn: 0,
+          timeTracked: 0,
+          dayStreak: newStreak,
+          lastUpdated: todayString,
+        }, () => {
+          chrome.alarms.create("tracking", { periodInMinutes: 1 });
+          resolve();
+        });
       }
-
-      const todayIndex = newWeek.findIndex(d => d.day === todayName);
-      if (todayIndex >= 0) newWeek[todayIndex].minutes = minOn;
-
-      let newStreak = dayStreak;
-      if (minOn >= dailyGoal && dailyGoal > 0) {
-        newStreak += 1;
-      } else {
-        newStreak = 0;
-      }
-
-      const now = new Date();
-      const isSunday = now.getDay() === 0;
-      const nextDay = new Date(now);
-      nextDay.setDate(now.getDate() + 1);
-      const isNextDayMonday = nextDay.getDay() === 1;
-
-      const shouldResetWeek = isSunday && isNextDayMonday;
-
-      chrome.storage.local.set({
-        weeklyData: shouldResetWeek ? newWeek.map(d => ({ ...d, minutes: 0 })) : newWeek,
-        minOn: 0,
-        dayStreak: newStreak,
-        lastUpdated: new Date().toLocaleDateString(),
-      });
-    }
-  );
+    );
+  });
 }
 
 
@@ -149,15 +161,18 @@ function updateIconFromStorage() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   switch (alarm.name) {
     case "tracking": {
-      const now = new Date();
-      const currentMinute = now.getMinutes();
-      const currentHour = now.getHours();
+      const { isPaused } = await chrome.storage.local.get("isPaused");
+      if (isPaused) return;
+      const todayString = new Date().toLocaleDateString();
+      const stored = await chrome.storage.local.get(["lastUpdated"]);
+      const lastUpdated = stored.lastUpdated;
 
-      if (currentHour === 0 && currentMinute === 0) {
+      if (lastUpdated !== todayString) {
+        await resetDailyStats();
         return;
       }
 
-      const data = await chrome.storage.local.get(["timeTracked", "minOn", "weeklyData"]);
+      const data = await chrome.storage.local.get(["timeTracked", "minOn", "weeklyData", "dailyGoal"]);
       const timeTracked = (data.timeTracked || 0) + 1;
       const minOn = (data.minOn || 0) + 1;
 
@@ -174,16 +189,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       let weeklyData: { day: string; minutes: number }[] =
         Array.isArray(data.weeklyData) && data.weeklyData.length > 0
           ? data.weeklyData
-          : defaultWeek;
+          : defaultWeek.slice();
 
       for (const d of defaultWeek) {
-        if (!weeklyData.some((w) => w.day === d.day)) {
-          weeklyData.push(d);
-        }
+        if (!weeklyData.some(w => w.day === d.day)) weeklyData.push({ ...d });
       }
 
-      const today = now.toLocaleDateString("en-US", { weekday: "short" });
-      const dayIndex = weeklyData.findIndex((d) => d.day === today);
+      const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
+      const dayIndex = weeklyData.findIndex(d => d.day === todayName);
       if (dayIndex >= 0) {
         weeklyData[dayIndex].minutes = minOn;
       }
@@ -197,7 +210,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       break;
 
     case "midnightReset":
-      resetDailyStats();
+      await resetDailyStats();
       scheduleMidnightReset();
       break;
   }
@@ -205,11 +218,10 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 async function checkMissedReset() {
   const { lastUpdated } = await chrome.storage.local.get("lastUpdated");
-
   const today = new Date().toLocaleDateString();
 
   if (lastUpdated !== today) {
-    resetDailyStats();
+    await resetDailyStats();
   }
 }
 
