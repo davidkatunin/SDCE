@@ -30,7 +30,6 @@ function App() {
   const [pauseEndTime, setPauseEndTime] = useState<number | null>(null);
   const [remainingTime, setRemainingTime] = useState<string>('00:00');
 
-  // ============= Load stored data on mount =============
   useEffect(() => {
     initializeStorage().then((data) => {
       setIsEnabled(data.isEnabled);
@@ -60,7 +59,6 @@ function App() {
     });
   }, []);
   
-  // ============= Persist changes to Chrome storage =============
   useEffect(() => {
     updateStorage({ isEnabled });
   }, [isEnabled]);
@@ -77,7 +75,6 @@ function App() {
     updateStorage({ pauseWhenGoalReached });
   }, [pauseWhenGoalReached]);  
 
-  // ============= Handle pause/resume =============
   const handlePause = (minutes: number) => {
     const end = Date.now() + minutes * 60 * 1000;
     const initialDiff = end - Date.now();
@@ -92,7 +89,6 @@ function App() {
     chrome.storage.local.set({ pauseEndTime: end, isPaused: true });
   };
   
-
   const handleResume = () => {
     setIsPaused(false);
     setPauseEndTime(null);
@@ -101,7 +97,6 @@ function App() {
     chrome.storage.local.remove(['pauseEndTime']);
   };
 
-  // ============= Timer countdown =============
   useEffect(() => {
     if (!isPaused || !pauseEndTime) return;
   
@@ -122,14 +117,12 @@ function App() {
     return () => clearInterval(interval);
   }, [isPaused, pauseEndTime]);
 
-  // ============= Toggle blocked sites =============
   const handleSiteToggle = (siteName: string, isBlocked: boolean) => {
     const updatedSites = { ...blockedSites, [siteName]: isBlocked };
     setBlockedSites(updatedSites);
     updateStorage({ blockedSites: updatedSites });
   };  
 
-  // ============= Demo data for chart =============
   const [weeklyData, setWeeklyData] = useState([
     { day: "Mon", minutes: 0 },
     { day: "Tue", minutes: 0 },
@@ -157,25 +150,20 @@ function App() {
     return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
-  // ============= Settings modal handlers =============
   const handleOpenSettings = () => setShowSettings(true);
   const handleCloseSettings = () => setShowSettings(false);
 
   return (
     <div className="px-4 w-[350px] h-[600px] bg-[#0a0a0a] relative">
-      {/* background gradients */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-
       <Nav
         isEnabled={isEnabled}
         onToggle={setIsEnabled}
         onOpenSettings={handleOpenSettings}
       />
-
       {isEnabled ? (
         <div className="flex flex-col items-center gap-4">
-          {/* Pause bar */}
           {isPaused ? (
             <div className="flex items-center justify-between gap-2 py-2 px-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30 w-full">
               <div className="flex items-center gap-2">
@@ -206,8 +194,6 @@ function App() {
               <span className="text-gray-300">Start your streak today! 💪</span>
             </div>
           )}
-
-          {/* Daily goal progress */}
           <div className="w-full flex flex-row justify-between items-center rounded-lg px-4 py-3 border-1 border-gray-700 bg-gradient-to-r from-purple-500/15 to-blue-500/15">
             <div>
               <p className="text-gray-400 text-xs">Time saved today</p>
@@ -235,8 +221,6 @@ function App() {
               strokeWidth={6}
             />
           </div>
-
-          {/* Weekly chart */}
           <div className="w-full flex flex-col gap-1 justify-between items-center rounded-lg px-4 py-3 border-1 border-gray-700 bg-white/3">
             <div className="w-full flex flex-row justify-between">
               <p className="text-gray-400 text-xs">Time saved this week</p>
@@ -268,8 +252,6 @@ function App() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Blocked Sites */}
           <div className="w-full flex flex-col gap-2">
             <div className="flex flex-row w-full justify-between items-center">
               <p className="text-gray-400 text-xs">Blocked Sites</p>
