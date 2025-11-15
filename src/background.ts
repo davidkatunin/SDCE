@@ -108,6 +108,8 @@ async function resetDailyStats(): Promise<void> {
         let newStreak = dayStreak || 0;
         if (dailyGoal > 0 && minOn >= dailyGoal) {
           newStreak += 1;
+        } else {
+          newStreak = 0;
         }
 
         const isSundayToMonday = lastUpdatedDay === 0 && todayDay === 1;
