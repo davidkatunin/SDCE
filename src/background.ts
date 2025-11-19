@@ -2,6 +2,7 @@ chrome.runtime.onInstalled.addListener(initBackground);
 chrome.runtime.onStartup.addListener(initBackground);
 
 async function initBackground() {
+  await ensureLastUpdatedInitialized();
   await checkMissedReset();
   initializeWeeklyDataIfNeeded();
   restorePauseAlarm();
@@ -250,3 +251,20 @@ chrome.storage.onChanged.addListener((changes, area) => {
     });
   }
 });
+
+async function ensureLastUpdatedInitialized() {
+  const { lastUpdated, lastUpdatedDay } = await chrome.storage.local.get([
+    "lastUpdated",
+    "lastUpdatedDay",
+  ]);
+
+  if (!lastUpdated || lastUpdatedDay === undefined) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    await chrome.storage.local.set({
+      lastUpdated: yesterday.toLocaleDateString(),
+      lastUpdatedDay: yesterday.getDay(),
+    });
+  }
+}
