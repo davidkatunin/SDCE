@@ -29,6 +29,7 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [pauseEndTime, setPauseEndTime] = useState<number | null>(null);
   const [remainingTime, setRemainingTime] = useState<string>('00:00');
+  const [pauseReason, setPauseReason] = useState<string | null>(null);
 
   useEffect(() => {
     initializeStorage().then((data) => {
@@ -49,6 +50,7 @@ function App() {
         { day: "Sat", minutes: 0 },
         { day: "Sun", minutes: 0 },
       ]);
+      setPauseReason(data.pauseReason || null);
       
       if (data.isPaused && data.pauseEndTime && data.pauseEndTime > Date.now()) {
         setIsPaused(true);
@@ -93,7 +95,8 @@ function App() {
     setIsPaused(false);
     setPauseEndTime(null);
     setRemainingTime('00:00');
-    chrome.storage.local.set({ isPaused: false });
+    setPauseReason(null);
+    chrome.storage.local.set({ isPaused: false, pauseReason: null });
     chrome.storage.local.remove(['pauseEndTime']);
   };
 
@@ -145,10 +148,19 @@ function App() {
       if (changes.dayStreak) {
         setDayStreak(changes.dayStreak.newValue);
       }
+      if (changes.pauseReason) {
+        setPauseReason(changes.pauseReason.newValue);
+      }
+      if (changes.isPaused) {
+        setIsPaused(changes.isPaused.newValue);
+      }
+      if (changes.pauseEndTime) {
+        setPauseEndTime(changes.pauseEndTime.newValue);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
-  }, []);
+  }, []);  
 
   const handleOpenSettings = () => setShowSettings(true);
   const handleCloseSettings = () => setShowSettings(false);
@@ -165,23 +177,49 @@ function App() {
       {isEnabled ? (
         <div className="flex flex-col items-center gap-4">
           {isPaused ? (
-            <div className="flex items-center justify-between gap-2 py-2 px-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30 w-full">
-              <div className="flex items-center gap-2">
-                <Pause className="w-4 h-4 text-amber-400" />
-                <span className="text-white">Paused</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-amber-400">{remainingTime}</span>
+            pauseReason === "goalMet" ? (
+              <div
+                className="flex items-center justify-between px-3 h-10
+                bg-gradient-to-r from-indigo-900/30 via-purple-900/30 to-pink-900/30
+                rounded-xl border border-purple-500/30 w-full"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-md bg-gradient-to-br from-purple-500 to-pink-500">
+                    <Sparkles className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-white text-sm font-semibold">Goal Reached</span>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleResume}
-                  className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                  className="h-6 px-2 text-xs text-purple-200 hover:text-white hover:bg-purple-500/10"
                 >
                   Resume
                 </Button>
               </div>
-            </div>
+            ) : (            
+              <div className="flex items-center justify-between gap-2 py-2 px-4 
+                bg-gradient-to-r from-amber-500/20 to-orange-500/20 
+                rounded-xl border border-amber-500/30 w-full"
+              >
+                <div className="flex items-center gap-2">
+                  <Pause className="w-4 h-4 text-amber-400" />
+                  <span className="text-white">Paused</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400">{remainingTime}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResume}
+                    className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                  >
+                    Resume
+                  </Button>
+                </div>
+              </div>
+            )
           ) : dayStreak > 0 ? (
             <div className="flex items-center justify-center gap-2 py-2 px-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl border border-orange-500/30 w-full">
               <Flame className="w-4 h-4 text-orange-400" />

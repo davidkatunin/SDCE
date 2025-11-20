@@ -1,6 +1,17 @@
 chrome.runtime.onInstalled.addListener(initBackground);
 chrome.runtime.onStartup.addListener(initBackground);
 
+function storageGet(keys: string | string[] | null = null): Promise<any> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (res) => resolve(res));
+  });
+}
+function storageSet(obj: Record<string, any>): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set(obj, () => resolve());
+  });
+}
+
 async function initBackground() {
   await ensureLastUpdatedInitialized();
   await checkMissedReset();
@@ -39,7 +50,11 @@ function restorePauseAlarm() {
 }
 
 function resumeExtension() {
-  chrome.storage.local.set({ isPaused: false, pauseEndTime: null });
+  chrome.storage.local.set({
+    isPaused: false,
+    pauseEndTime: null,
+    pauseReason: null,
+  });
   chrome.alarms.clear("pauseExpiry");
 }
 
@@ -75,64 +90,67 @@ function scheduleMidnightReset() {
 async function resetDailyStats(): Promise<void> {
   chrome.alarms.clear("tracking");
 
-  return new Promise((resolve) => {
-    chrome.storage.local.get(
-      ["minOn", "dailyGoal", "weeklyData", "dayStreak", "lastUpdated", "lastUpdatedDay"],
-      ({ minOn = 0, dailyGoal = 0, weeklyData = [], dayStreak = 0, lastUpdatedDay }) => {
+  const {
+    minOn = 0,
+    dailyGoal = 0,
+    weeklyData = [],
+    dayStreak = 0,
+    lastUpdatedDay,
+  } = await storageGet(["minOn", "dailyGoal", "weeklyData", "dayStreak", "lastUpdatedDay"]);
 
-        const today = new Date();
-        const todayName = today.toLocaleDateString("en-US", { weekday: "short" });
-        const todayDay = today.getDay();
-        const todayString = today.toLocaleDateString();
+  const today = new Date();
+  const todayName = today.toLocaleDateString("en-US", { weekday: "short" });
+  const todayDay = today.getDay();
 
-        const defaultWeek = [
-          { day: "Mon", minutes: 0 },
-          { day: "Tue", minutes: 0 },
-          { day: "Wed", minutes: 0 },
-          { day: "Thu", minutes: 0 },
-          { day: "Fri", minutes: 0 },
-          { day: "Sat", minutes: 0 },
-          { day: "Sun", minutes: 0 },
-        ];
+  const defaultWeek = [
+    { day: "Mon", minutes: 0 },
+    { day: "Tue", minutes: 0 },
+    { day: "Wed", minutes: 0 },
+    { day: "Thu", minutes: 0 },
+    { day: "Fri", minutes: 0 },
+    { day: "Sat", minutes: 0 },
+    { day: "Sun", minutes: 0 },
+  ];
 
-        const normalizedWeek = [...defaultWeek];
-        if (Array.isArray(weeklyData)) {
-          for (const w of weeklyData) {
-            const idx = normalizedWeek.findIndex(d => d.day === w.day);
-            if (idx >= 0) normalizedWeek[idx].minutes = w.minutes ?? 0;
-          }
-        }
+  const normalizedWeek = defaultWeek.map(d => ({ ...d }));
+  if (Array.isArray(weeklyData)) {
+    for (const w of weeklyData) {
+      const idx = normalizedWeek.findIndex(nd => nd.day === w.day);
+      if (idx >= 0) normalizedWeek[idx].minutes = w.minutes ?? 0;
+    }
+  }
 
-        const todayIndex = normalizedWeek.findIndex(d => d.day === todayName);
-        if (todayIndex >= 0) normalizedWeek[todayIndex].minutes = minOn;
+  const todayIndex = normalizedWeek.findIndex(d => d.day === todayName);
+  if (todayIndex >= 0) normalizedWeek[todayIndex].minutes = minOn;
 
-        let newStreak = dayStreak || 0;
-        if (dailyGoal > 0 && minOn >= dailyGoal) {
-          newStreak += 1;
-        } else {
-          newStreak = 0;
-        }
+  let newStreak = dayStreak || 0;
+  if (dailyGoal > 0 && minOn >= dailyGoal) {
+    newStreak = (dayStreak || 0) + 1;
+  } else {
+    newStreak = 0;
+  }
 
-        const isSundayToMonday = lastUpdatedDay === 0 && todayDay === 1;
+  const isSundayToMonday = lastUpdatedDay === 0 && todayDay === 1;
 
-        const finalWeekly = isSundayToMonday
-          ? normalizedWeek.map(d => ({ ...d, minutes: 0 }))
-          : normalizedWeek;
+  const finalWeekly = isSundayToMonday
+    ? normalizedWeek.map(d => ({ ...d, minutes: 0 }))
+    : normalizedWeek;
 
-        chrome.storage.local.set({
-          weeklyData: finalWeekly,
-          minOn: 0,
-          timeTracked: 0,
-          dayStreak: newStreak,
-          lastUpdated: todayString,
-          lastUpdatedDay: todayDay,
-        }, () => {
-          chrome.alarms.create("tracking", { periodInMinutes: 1 });
-          resolve();
-        });
-      }
-    );
+  const todayString = today.toLocaleDateString();
+
+  await storageSet({
+    weeklyData: finalWeekly,
+    minOn: 0,
+    timeTracked: 0,
+    dayStreak: newStreak,
+    lastUpdated: todayString,
+    lastUpdatedDay: todayDay,
+    isPaused: false,
+    pauseEndTime: null,
+    pauseReason: null,
   });
+
+  chrome.alarms.create("tracking", { periodInMinutes: 1 });
 }
 
 function updateIcon(isEnabled: boolean, isPaused: boolean) {
@@ -163,20 +181,33 @@ function updateIconFromStorage() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   switch (alarm.name) {
     case "tracking": {
-      const { isPaused } = await chrome.storage.local.get("isPaused");
+      const { isPaused } = await storageGet("isPaused");
       if (isPaused) return;
-      const todayString = new Date().toLocaleDateString();
-      const stored = await chrome.storage.local.get(["lastUpdated"]);
-      const lastUpdated = stored.lastUpdated;
 
+      const todayString = new Date().toLocaleDateString();
+      const stored = await storageGet("lastUpdated");
+      const lastUpdated = stored?.lastUpdated;
       if (lastUpdated !== todayString) {
         await resetDailyStats();
         return;
       }
 
-      const data = await chrome.storage.local.get(["timeTracked", "minOn", "weeklyData", "dailyGoal"]);
+      const data = await storageGet(["timeTracked", "minOn", "weeklyData", "dailyGoal", "pauseWhenGoalReached"]);
       const timeTracked = (data.timeTracked || 0) + 1;
       const minOn = (data.minOn || 0) + 1;
+
+      const shouldPause = !!data.pauseWhenGoalReached && data.dailyGoal > 0 && minOn >= data.dailyGoal;
+      if (shouldPause) {
+        const midnight = new Date();
+        midnight.setHours(24, 0, 0, 0);
+        await storageSet({
+          isPaused: true,
+          pauseEndTime: midnight.getTime(),
+          pauseReason: "goalMet",
+        });
+        chrome.alarms.create("pauseExpiry", { when: midnight.getTime() });
+        stopTracking();
+      }
 
       const defaultWeek = [
         { day: "Mon", minutes: 0 },
@@ -190,7 +221,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
       let weeklyData: { day: string; minutes: number }[] =
         Array.isArray(data.weeklyData) && data.weeklyData.length > 0
-          ? data.weeklyData
+          ? data.weeklyData.slice()
           : defaultWeek.slice();
 
       for (const d of defaultWeek) {
@@ -199,15 +230,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
       const todayName = new Date().toLocaleDateString("en-US", { weekday: "short" });
       const dayIndex = weeklyData.findIndex(d => d.day === todayName);
-      if (dayIndex >= 0) {
-        weeklyData[dayIndex].minutes = minOn;
-      }
+      if (dayIndex >= 0) weeklyData[dayIndex].minutes = minOn;
 
-      await chrome.storage.local.set({ timeTracked, minOn, weeklyData });
+      await storageSet({ timeTracked, minOn, weeklyData });
       break;
     }
 
     case "pauseExpiry":
+      // user-set or goal-set pause expired
       resumeExtension();
       break;
 
@@ -219,7 +249,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 async function checkMissedReset() {
-  const { lastUpdated } = await chrome.storage.local.get("lastUpdated");
+  const { lastUpdated } = await storageGet("lastUpdated");
   const today = new Date().toLocaleDateString();
 
   if (lastUpdated !== today) {
@@ -253,16 +283,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 async function ensureLastUpdatedInitialized() {
-  const { lastUpdated, lastUpdatedDay } = await chrome.storage.local.get([
-    "lastUpdated",
-    "lastUpdatedDay",
-  ]);
+  const { lastUpdated, lastUpdatedDay } = await storageGet(["lastUpdated", "lastUpdatedDay"]);
 
   if (!lastUpdated || lastUpdatedDay === undefined) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-
-    await chrome.storage.local.set({
+    await storageSet({
       lastUpdated: yesterday.toLocaleDateString(),
       lastUpdatedDay: yesterday.getDay(),
     });

@@ -4,6 +4,7 @@ export interface ExtensionStorage {
     pauseWhenGoalReached: boolean;
     blockedSites: Record<string, boolean>;
     pauseEndTime: number | null;
+    pauseReason: string | null;
     isPaused: boolean;
     weeklyData: { day: string; minutes: number }[];
     dayStreak: number;
@@ -24,6 +25,7 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
     },
     weeklyData: [],
     pauseEndTime: null,
+    pauseReason: null,
     isPaused: false,
     dayStreak: 0,
     minOn: 0,
