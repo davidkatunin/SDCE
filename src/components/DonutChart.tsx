@@ -16,7 +16,6 @@ interface DonutChartProps {
     return (
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="transform -rotate-90">
-          {/* Background circle */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -25,7 +24,6 @@ interface DonutChartProps {
             strokeWidth={strokeWidth}
             fill="none"
           />
-          {/* Progress circle */}
           <circle
             cx={size / 2}
             cy={size / 2}

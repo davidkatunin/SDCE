@@ -16,16 +16,17 @@ export function SettingsPopup({
   currentGoal,
   pauseWhenGoalReached: initialPauseSetting,
 }: SettingsPopupProps) {
-  const [goal, setGoal] = useState(currentGoal);
+  const [goal, setGoal] = useState<string>(String(currentGoal));
   const [pauseWhenGoalReached, setPauseWhenGoalReached] = useState(initialPauseSetting);
 
   useEffect(() => {
-    setGoal(currentGoal);
+    setGoal(String(currentGoal));
     setPauseWhenGoalReached(initialPauseSetting);
   }, [currentGoal, initialPauseSetting]);
 
   const handleSave = () => {
-    onSaveGoal(goal, pauseWhenGoalReached);
+    const parsedGoal = goal.trim() === "" ? 0 : Number(goal);
+    onSaveGoal(parsedGoal, pauseWhenGoalReached);
     onClose();
   };
 
@@ -39,8 +40,6 @@ export function SettingsPopup({
         <h2 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
           <Settings className="w-5 h-5" /> Settings
         </h2>
-
-        {/* Daily goal input */}
         <div className="flex flex-col gap-3 mb-4">
           <label htmlFor="goal" className="text-gray-400 text-sm">
             Daily Goal (minutes)
@@ -52,13 +51,13 @@ export function SettingsPopup({
             min={30}
             max={300}
             step={15}
-            onChange={e => setGoal(Number(e.target.value))}
+            onChange={e => {
+              setGoal(e.target.value);
+            }}
             className="bg-gray-800 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <p className="text-gray-500 text-xs">Set your daily time-saving goal</p>
         </div>
-
-        {/* Pause When Goal Reached toggle */}
         <div className="flex items-center gap-3 mb-4">
           <label htmlFor="pause-goal-toggle" className="text-gray-400 text-sm flex-1">
             Pause when goal reached
@@ -82,8 +81,6 @@ export function SettingsPopup({
             />
           </button>
         </div>
-
-        {/* Pause Timer shortcuts */}
         <div className="flex flex-col gap-2 mb-4">
           <p className="text-gray-400 text-sm mb-1">Pause blocking for:</p>
           <div className="flex gap-2">
@@ -98,8 +95,6 @@ export function SettingsPopup({
             ))}
           </div>
         </div>
-
-        {/* Action buttons */}
         <div className="flex flex-row gap-2 pt-2 border-t border-white/10">
           <button
             onClick={onClose}
