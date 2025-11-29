@@ -96,7 +96,21 @@ function App() {
     setPauseEndTime(null);
     setRemainingTime('00:00');
     setPauseReason(null);
-    chrome.storage.local.set({ isPaused: false, pauseReason: null });
+    chrome.storage.local.get(["pauseReason"], ({ pauseReason }) => {
+      if (pauseReason === "goalMet") {
+        chrome.storage.local.set({
+          isPaused: false,
+          pauseReason: null,
+          goalPauseAcknowledged: true
+        });
+      } else {
+        chrome.storage.local.set({
+          isPaused: false,
+          pauseReason: null,
+          goalPauseAcknowledged: false
+        });
+      }
+    });
     chrome.storage.local.remove(['pauseEndTime']);
   };
 

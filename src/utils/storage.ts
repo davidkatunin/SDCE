@@ -6,6 +6,7 @@ export interface ExtensionStorage {
     pauseEndTime: number | null;
     pauseReason: string | null;
     isPaused: boolean;
+    goalPauseAcknowledged: boolean;
     weeklyData: { day: string; minutes: number }[];
     dayStreak: number;
     minOn: number;
@@ -27,6 +28,7 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
     pauseEndTime: null,
     pauseReason: null,
     isPaused: false,
+    goalPauseAcknowledged: false,
     dayStreak: 0,
     minOn: 0,
     weeklyChange: 0,
@@ -57,11 +59,11 @@ export async function initializeStorage(): Promise<ExtensionStorage> {
 export async function updateStorage(partialData: Partial<ExtensionStorage>) {
     return new Promise<void>((resolve, reject) => {
         chrome.storage.local.set(partialData, () => {
-        if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-        } else {
-            resolve();
-        }
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve();
+            }
         });
     });
 }

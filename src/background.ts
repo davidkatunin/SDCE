@@ -152,10 +152,10 @@ async function resetDailyStats(): Promise<void> {
     dayStreak: newStreak,
     lastUpdated: today.toLocaleDateString(),
     lastUpdatedDay: todayDay,
-
     isPaused: false,
     pauseEndTime: null,
     pauseReason: null,
+    goalPauseAcknowledged: false,
   });
 
   chrome.alarms.create("tracking", { periodInMinutes: 1 });
@@ -201,11 +201,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         return;
       }
 
-      const data = await storageGet(["timeTracked", "minOn", "weeklyData", "dailyGoal", "pauseWhenGoalReached"]);
+      const data = await storageGet(["timeTracked", "minOn", "weeklyData", "dailyGoal", "pauseWhenGoalReached", "goalPauseAcknowledged"]);
       const timeTracked = (data.timeTracked || 0) + 1;
       const minOn = (data.minOn || 0) + 1;
 
-      const shouldPause = !!data.pauseWhenGoalReached && data.dailyGoal > 0 && minOn >= data.dailyGoal;
+      const shouldPause =
+        !!data.pauseWhenGoalReached &&
+        data.dailyGoal > 0 &&
+        minOn >= data.dailyGoal &&
+        !data.goalPauseAcknowledged;
+
       if (shouldPause) {
         const midnight = new Date();
         midnight.setHours(24, 0, 0, 0);
@@ -213,6 +218,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
           isPaused: true,
           pauseEndTime: midnight.getTime(),
           pauseReason: "goalMet",
+          goalPauseAcknowledged: false
         });
         chrome.alarms.create("pauseExpiry", { when: midnight.getTime() });
         stopTracking();
@@ -246,7 +252,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     }
 
     case "pauseExpiry":
-      // user-set or goal-set pause expired
       resumeExtension();
       break;
 
