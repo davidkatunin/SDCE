@@ -96,22 +96,18 @@ function App() {
     setPauseEndTime(null);
     setRemainingTime('00:00');
     setPauseReason(null);
-    chrome.storage.local.get(["pauseReason"], ({ pauseReason }) => {
-      if (pauseReason === "goalMet") {
-        chrome.storage.local.set({
-          isPaused: false,
-          pauseReason: null,
-          goalPauseAcknowledged: true
-        });
-      } else {
-        chrome.storage.local.set({
-          isPaused: false,
-          pauseReason: null,
-          goalPauseAcknowledged: false
-        });
-      }
+  
+    chrome.storage.local.get(["pauseReason", "minOn", "dailyGoal"], ({ pauseReason, minOn = 0, dailyGoal = 0 }) => {
+      const goalMetNow = typeof minOn === 'number' && typeof dailyGoal === 'number' && minOn >= dailyGoal;
+      const acknowledged = pauseReason === "goalMet" || goalMetNow;
+  
+      chrome.storage.local.set({
+        isPaused: false,
+        pauseReason: null,
+        goalPauseAcknowledged: acknowledged
+      });
+      chrome.storage.local.remove(['pauseEndTime']);
     });
-    chrome.storage.local.remove(['pauseEndTime']);
   };
 
   useEffect(() => {

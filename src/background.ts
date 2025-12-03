@@ -49,12 +49,24 @@ function restorePauseAlarm() {
   });
 }
 
-function resumeExtension() {
-  chrome.storage.local.set({
-    isPaused: false,
-    pauseEndTime: null,
-    pauseReason: null,
-  });
+async function resumeExtension({ manualAck = false } = {}) {
+  if (manualAck) {
+    const { minOn = 0, dailyGoal = 0 } = await storageGet(["minOn", "dailyGoal"]);
+    const acknowledged = minOn >= dailyGoal;
+    await storageSet({
+      isPaused: false,
+      pauseEndTime: null,
+      pauseReason: null,
+      goalPauseAcknowledged: acknowledged
+    });
+  } else {
+    await storageSet({
+      isPaused: false,
+      pauseEndTime: null,
+      pauseReason: null,
+      goalPauseAcknowledged: false
+    });
+  }
   chrome.alarms.clear("pauseExpiry");
 }
 
