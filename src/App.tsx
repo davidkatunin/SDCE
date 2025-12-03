@@ -207,7 +207,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={handleResume}
-                  className="h-6 px-2 text-xs text-purple-200 hover:text-white hover:bg-purple-500/10"
+                  className="h-6 px-2 text-xs text-purple-200 hover:text-white hover:bg-purple-500/10 hover:cursor-pointer"
                 >
                   Resume
                 </Button>
@@ -227,7 +227,7 @@ function App() {
                     variant="ghost"
                     size="sm"
                     onClick={handleResume}
-                    className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                    className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 hover:cursor-pointer"
                   >
                     Resume
                   </Button>

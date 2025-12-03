@@ -21,7 +21,7 @@ const Nav: React.FC<NavProps> = ({ isEnabled, onToggle, onOpenSettings }) => {
         <div className="flex items-center space-x-3">
           <button
             onClick={onOpenSettings}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors duration-200"
+            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 hover:cursor-pointer rounded-md transition-colors duration-200"
           >
             <svg
               className="h-5 w-5"
@@ -46,7 +46,7 @@ const Nav: React.FC<NavProps> = ({ isEnabled, onToggle, onOpenSettings }) => {
           {isEnabled ? <p className='text-gray-500 text-xs'>On</p> : <p className='text-gray-500 text-xs'>Off</p>}
           <button
             onClick={() => onToggle(!isEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 hover:cursor-pointer ${
               isEnabled ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-600'
             }`}
             role="switch"

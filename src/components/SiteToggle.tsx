@@ -18,7 +18,7 @@ export function SiteToggle({ siteName, siteIcon, isBlocked, onToggle }: SiteTogg
       </div>
       <button
         onClick={handleClick}
-        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-all duration-200 ${
+        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-all duration-200 hover:cursor-pointer ${
           isBlocked ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-600'
         }`}
         role="switch"

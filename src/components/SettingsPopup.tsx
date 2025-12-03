@@ -68,7 +68,7 @@ export function SettingsPopup({
             onClick={togglePauseSetting}
             role="switch"
             aria-checked={pauseWhenGoalReached}
-            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-all duration-200 ${
+            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-all duration-200 hover:cursor-pointer ${
               pauseWhenGoalReached
                 ? "bg-gradient-to-r from-blue-500 to-purple-600"
                 : "bg-gray-600"
@@ -88,7 +88,7 @@ export function SettingsPopup({
               <button
                 key={m}
                 onClick={() => onPause(m)}
-                className="flex-1 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-md py-1 text-sm transition-colors"
+                className="flex-1 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-md py-1 text-sm transition-colors hover:cursor-pointer"
               >
                 {m}m
               </button>
@@ -98,13 +98,13 @@ export function SettingsPopup({
         <div className="flex flex-row gap-2 pt-2 border-t border-white/10">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-sm px-3 py-1 mt-3 flex-1"
+            className="text-gray-400 hover:text-white text-sm px-3 py-1 mt-3 flex-1 hover:cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm px-3 py-1 rounded-md mt-3 flex-1"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm px-3 py-1 rounded-md mt-3 flex-1 hover:cursor-pointer"
           >
             Save
           </button>
