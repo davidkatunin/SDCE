@@ -13,8 +13,10 @@ const Nav: React.FC<NavProps> = ({ isEnabled, onToggle, onOpenSettings }) => {
     <nav>
       <div className="flex justify-between items-center h-16">
         <div className="flex items-center">
-          <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm">SD</span>
+          <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[5px] flex items-center justify-center">
+            <span className="block w-full h-full">
+              <img src="icons/icon128.png" />
+            </span>
           </div>
           <span className="ml-2 text-white font-semibold text-sm">Stop Doomscrolling</span>
         </div>

@@ -105,20 +105,25 @@ async function resetDailyStats(): Promise<void> {
   const {
     minOn = 0,
     dailyGoal = 0,
-    weeklyData,
+    weeklyData = [],
     dayStreak = 0,
-    lastUpdatedDay
+    lastUpdated
   } = await storageGet([
     "minOn",
     "dailyGoal",
     "weeklyData",
     "dayStreak",
-    "lastUpdatedDay"
+    "lastUpdated"
   ]);
 
   const today = new Date();
+  const todayDateStr = today.toLocaleDateString();
   const todayName = today.toLocaleDateString("en-US", { weekday: "short" });
-  const todayDay = today.getDay();
+
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayDateStr = yesterday.toLocaleDateString();
+  const yesterdayName = yesterday.toLocaleDateString("en-US", { weekday: "short" });
 
   const defaultWeek = [
     { day: "Mon", minutes: 0 },
@@ -131,48 +136,49 @@ async function resetDailyStats(): Promise<void> {
   ];
 
   const mergedWeek = defaultWeek.map(d => {
-    const match = weeklyData?.find(
-      (w: { day: string; minutes: number }) => w.day === d.day
-    );
+    const match = Array.isArray(weeklyData)
+      ? weeklyData.find((w) => w.day === d.day)
+      : undefined;
     return { day: d.day, minutes: match?.minutes ?? 0 };
   });
 
-  let newStreak = 0;
-  if (dailyGoal > 0 && minOn >= dailyGoal) {
-    newStreak = dayStreak + 1;
-  }
-
-  const isSundayToMonday =
-    lastUpdatedDay === 0 && todayDay === 1;
-
-  let finalWeek;
-  if (isSundayToMonday) {
-    finalWeek = defaultWeek.map(d => ({ ...d }));
+  let yesterdayMinutes = 0;
+  if (lastUpdated === yesterdayDateStr) {
+    yesterdayMinutes = minOn ?? 0;
   } else {
-    finalWeek = mergedWeek.map(d => ({ ...d }));
+    const yEntry = mergedWeek.find(e => e.day === yesterdayName);
+    yesterdayMinutes = yEntry ? (yEntry.minutes ?? 0) : 0;
   }
+
+  const newStreak = (dailyGoal > 0 && yesterdayMinutes >= dailyGoal) ? (dayStreak || 0) + 1 : 0;
+
+  const isSundayToMonday = yesterdayName === "Sun" && todayName === "Mon";
+  const finalWeek = isSundayToMonday
+    ? defaultWeek.map(d => ({ ...d }))
+    : mergedWeek.map(d => ({ ...d }));
 
   const todayEntry = finalWeek.find(d => d.day === todayName);
-  if (todayEntry) {
-    todayEntry.minutes = 0;
-  }
+  if (todayEntry) todayEntry.minutes = 0;
 
   await storageSet({
     weeklyData: finalWeek,
     minOn: 0,
     timeTracked: 0,
     dayStreak: newStreak,
-    lastUpdated: today.toLocaleDateString(),
-    lastUpdatedDay: todayDay,
+    lastUpdated: todayDateStr,
+    lastUpdatedDay: today.getDay(),
     isPaused: false,
     pauseEndTime: null,
     pauseReason: null,
     goalPauseAcknowledged: false,
   });
 
-  chrome.alarms.create("tracking", { periodInMinutes: 1 });
+  const { isEnabled, blockedSites, isPaused } = await storageGet(["isEnabled", "blockedSites", "isPaused"]);
+  const hasAnyBlocked = Object.values(blockedSites || {}).some(v => v);
+  if (isEnabled && hasAnyBlocked && !isPaused) {
+    chrome.alarms.create("tracking", { periodInMinutes: 1 });
+  }
 }
-
 
 function updateIcon(isEnabled: boolean, isPaused: boolean) {
   const active = !!isEnabled && !isPaused;

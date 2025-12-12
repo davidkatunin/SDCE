@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Stop Doomscrolling Chrome Extension",
   "version": "1.0.0",
-  "description": "SDCE helps get rid of distractions and end doomscrolling on sites like Youtube, Twitch, TikTok, and Facebook.",
+  "description": "An extension to help stop doomscrolling on Chrome",
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"

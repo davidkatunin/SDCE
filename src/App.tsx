@@ -3,8 +3,9 @@ import Nav from './components/Nav'
 import { DonutChart } from './components/DonutChart'
 import { SiteToggle } from './components/SiteToggle'
 import {
-  Flame, TrendingUp, TrendingDown, SlidersHorizontal,
-  Instagram, Youtube, Facebook, Music2, Pause, Sparkles
+  Flame, SlidersHorizontal,
+  Instagram, Youtube, Facebook, Music2, Pause, Sparkles,
+  Clock
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { SettingsPopup } from './components/SettingsPopup';
@@ -16,8 +17,8 @@ function App() {
   const [dayStreak, setDayStreak] = useState(0);
   const [minOn, setMinOn] = useState(0);
   const [dailyGoal, setDailyGoal] = useState(0);
-  const [isTrending, setIsTrending] = useState(true);
-  const [weeklyChange, setWeeklyChange] = useState(0);
+  // const [isTrending, setIsTrending] = useState(true);
+  // const [weeklyChange, setWeeklyChange] = useState(0);
   const [pauseWhenGoalReached, setPauseWhenGoalReached] = useState(false);
   const [blockedSites, setBlockedSites] = useState<ExtensionStorage["blockedSites"]>({
     Instagram: false,
@@ -39,8 +40,8 @@ function App() {
       setBlockedSites(data.blockedSites);
       setDayStreak(data.dayStreak);
       setMinOn(data.minOn || 0);
-      setWeeklyChange(data.weeklyChange);
-      setIsTrending(data.isTrending);
+      // setWeeklyChange(data.weeklyChange);
+      // setIsTrending(data.isTrending);
       setWeeklyData(data.weeklyData || [
         { day: "Mon", minutes: 0 },
         { day: "Tue", minutes: 0 },
@@ -250,7 +251,7 @@ function App() {
                 <p className='text-gray-400 text-lg'>/ {dailyGoal} min</p>
               </div>
               <div className="flex flex-row text-sm">
-                {isTrending ? (
+                {/* {isTrending ? (
                   <div className="flex flex-row items-center gap-2 pt-1">
                     <TrendingUp color='green' size={18}/>
                     <p className='text-green-600 text-xs'>{weeklyChange}% less than last week</p>
@@ -260,7 +261,11 @@ function App() {
                     <TrendingDown color='red' size={18}/>
                     <p className='text-red-600 text-xs'>{weeklyChange}% more than last week</p>
                   </div>
-                )}
+                )} */}
+                <div className="flex flex-row items-center gap-2 pt-1">
+                    <Clock color='gray' size={14}/>
+                    <p className='text-gray-500 text-xs'>Weekly comparison coming soon</p>
+                  </div>
               </div>
             </div>
             <DonutChart
