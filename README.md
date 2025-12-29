@@ -1,66 +1,46 @@
-# React Chrome Extension Template
+# React Chrome Extension (Vite + React + TypeScript)
 
-This is a template for creating a Chrome extension using React and [Vite](https://vitejs.dev/) with TypeScript.
+Personal Chrome extension starter built with React and Vite using TypeScript. This repo lives in my GitHub portfolio and is meant to be a clean, modern base for experimenting with UI ideas, background scripts, and Chrome APIs all for an attempt to end doomscrolling!
 
 
-## Getting Started
+## Requirements
+- Node.js 18 or 20
+- npm
 
-### Prerequisites
+## Setup
+```sh
+git clone <your-fork-url>
+cd chrome-extension-react-template
+npm install
+```
 
-Make sure you have [Node.js](https://nodejs.org/) (version 18+ or 20+) installed on your machine.
-
-### Setup
-
-1. Clone or fork the repository :
-
-    ```sh
-    # To clone
-    git clone https://github.com/5tigerjelly/chrome-extension-react-template
-    cd chrome-extension-react-template
-    ```
-
-2. Install the dependencies:
-
-    ```sh
-    npm install
-    ```
-
-## 🏗️ Development
-
-To start the development server:
-
+## Develop
+Runs the Vite dev server with fast refresh:
 ```sh
 npm run dev
 ```
+Vite will open a browser tab; for extension-specific flows, load the dev build in Chrome as below.
 
-This will start the Vite development server and open your default browser.
-
-## 📦 Build 
-
-To create a production build:
-
+## Build
+Creates a production-ready bundle in `build/`:
 ```sh
 npm run build
 ```
 
-This will generate the build files in the `build` directory.
+## Load the Extension in Chrome
+    1) Open `chrome://extensions/`
+    2) Toggle on Developer mode (top right)
+    3) Click **Load unpacked** and select the `build/` directory
 
-## 📂 Load Extension in Chrome
+## Project Structure
+- `public/` — static assets and `manifest.json`
+- `src/` — React app code (UI components, background/service scripts)
+- `vite.config.ts` — Vite config for extension targets
+- `tsconfig.json` — TypeScript config
+- `package.json` — scripts and dependencies
 
-1. Open Chrome and navigate to `chrome://extensions/`.
-2. Enable "Developer mode" using the toggle switch in the top right corner.
-3. Click "Load unpacked" and select the `build` directory.
-
-Your React app should now be loaded as a Chrome extension!
-
-## 🗂️ Project Structure
-
-- `public/`: Contains static files and the `manifest.json`.
-- `src/`: Contains the React app source code.
-- `vite.config.ts`: Vite configuration file.
-- `tsconfig.json`: TypeScript configuration file.
-- `package.json`: Contains the project dependencies and scripts.
-
-## License
-
-This project is licensed under the MIT License.
+## Contributing
+I welcome PRs and issues from the community. To keep reviews smooth:
+- Fork the repo, create a branch (`feat/my-change`), and keep changes focused.
+- Describe user-facing changes and include screenshots/GIFs when UI is affected.
+- For extension behavior changes, note how to reproduce feature/change
