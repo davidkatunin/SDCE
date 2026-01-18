@@ -9,8 +9,10 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { SettingsPopup } from './components/SettingsPopup';
+import { CodeEntryModal } from './components/CodeEntryModal';
 import { Button } from './components/ui/button';
 import { initializeStorage, updateStorage, ExtensionStorage } from './utils/storage';
+import { nanoid } from "nanoid";
 
 function App() {
   const [isEnabled, setIsEnabled] = useState(true);
@@ -31,6 +33,9 @@ function App() {
   const [pauseEndTime, setPauseEndTime] = useState<number | null>(null);
   const [remainingTime, setRemainingTime] = useState<string>('00:00');
   const [pauseReason, setPauseReason] = useState<string | null>(null);
+  const [showCodeEntry, setShowCodeEntry] = useState(false);
+  const [resumeCode, setResumeCode] = useState<string>('');
+  const [codeAction, setCodeAction] = useState<'resume' | 'disable' | null>(null);
 
   useEffect(() => {
     initializeStorage().then((data) => {
@@ -93,22 +98,51 @@ function App() {
   };
   
   const handleResume = () => {
-    setIsPaused(false);
-    setPauseEndTime(null);
-    setRemainingTime('00:00');
-    setPauseReason(null);
-  
-    chrome.storage.local.get(["pauseReason", "minOn", "dailyGoal"], ({ pauseReason, minOn = 0, dailyGoal = 0 }) => {
-      const goalMetNow = typeof minOn === 'number' && typeof dailyGoal === 'number' && minOn >= dailyGoal;
-      const acknowledged = pauseReason === "goalMet" || goalMetNow;
-  
-      chrome.storage.local.set({
-        isPaused: false,
-        pauseReason: null,
-        goalPauseAcknowledged: acknowledged
-      });
-      chrome.storage.local.remove(['pauseEndTime']);
-    });
+    const randomCode = nanoid(6).toUpperCase();
+    setResumeCode(randomCode);
+    setCodeAction('resume');
+    setShowCodeEntry(true);
+  };
+
+  const handleToggle = (newValue: boolean) => {
+    if (isEnabled && !newValue) {
+      const randomCode = nanoid(6).toUpperCase();
+      setResumeCode(randomCode);
+      setCodeAction('disable');
+      setShowCodeEntry(true);
+    } else {
+      setIsEnabled(newValue);
+    }
+  };
+
+  const handleCodeVerified = (enteredCode: string) => {
+    if (enteredCode === resumeCode) {
+      setShowCodeEntry(false);
+      const action = codeAction;
+      setResumeCode('');
+      setCodeAction(null);
+
+      if (action === 'resume') {
+        setIsPaused(false);
+        setPauseEndTime(null);
+        setRemainingTime('00:00');
+        setPauseReason(null);
+    
+        chrome.storage.local.get(["pauseReason", "minOn", "dailyGoal"], ({ pauseReason, minOn = 0, dailyGoal = 0 }) => {
+          const goalMetNow = typeof minOn === 'number' && typeof dailyGoal === 'number' && minOn >= dailyGoal;
+          const acknowledged = pauseReason === "goalMet" || goalMetNow;
+    
+          chrome.storage.local.set({
+            isPaused: false,
+            pauseReason: null,
+            goalPauseAcknowledged: acknowledged
+          });
+          chrome.storage.local.remove(['pauseEndTime']);
+        });
+      } else if (action === 'disable') {
+        setIsEnabled(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -182,7 +216,7 @@ function App() {
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <Nav
         isEnabled={isEnabled}
-        onToggle={setIsEnabled}
+        onToggle={handleToggle}
         onOpenSettings={handleOpenSettings}
       />
       {isEnabled ? (
@@ -344,6 +378,18 @@ function App() {
           onPause={handlePause}
           currentGoal={dailyGoal}
           pauseWhenGoalReached={pauseWhenGoalReached}
+        />
+      )}
+      {showCodeEntry && resumeCode && codeAction && (
+        <CodeEntryModal
+          code={resumeCode}
+          action={codeAction}
+          onVerify={handleCodeVerified}
+          onClose={() => {
+            setShowCodeEntry(false);
+            setResumeCode('');
+            setCodeAction(null);
+          }}
         />
       )}
     </div>
