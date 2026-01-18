@@ -1,46 +1,55 @@
-# React Chrome Extension (Vite + React + TypeScript)
+# Stop Doomscrolling Chrome Extension
 
-Personal Chrome extension starter built with React and Vite using TypeScript. This repo lives in my GitHub portfolio and is meant to be a clean, modern base for experimenting with UI ideas, background scripts, and Chrome APIs all for an attempt to end doomscrolling!
+A **privacy-first Chrome extension** designed to reduce doomscrolling by blocking distracting sites, tracking time saved, and encouraging healthy daily habits through goals and streaks.
 
+Built with **React**, **TypeScript**, **Tailwind CSS**, and **Chrome Extension APIs**.
 
-## Requirements
-- Node.js 18 or 20
-- npm
+---
 
-## Setup
-```sh
-git clone <your-fork-url>
-cd chrome-extension-react-template
-npm install
-```
+## 🚀 Current Features
 
-## Develop
-Runs the Vite dev server with fast refresh:
-```sh
-npm run dev
-```
-Vite will open a browser tab; for extension-specific flows, load the dev build in Chrome as below.
+- ⏱️ **Daily time tracking** for blocked sites  
+- 🎯 **Custom daily goals** with optional auto-pause when reached  
+- 🔥 **Daily streak system** to build consistency  
+- 📊 **Weekly usage chart** with automatic week resets  
+- ⏸️ **Manual pause controls** (15 / 30 / 60 minutes)  
+- 🌙 **Automatic midnight resets**, robust to browser restarts  
+- 🔒 **100% local data storage** — no accounts, no tracking, no servers  
 
-## Build
-Creates a production-ready bundle in `build/`:
-```sh
-npm run build
-```
+---
 
-## Load the Extension in Chrome
-    1) Open `chrome://extensions/`
-    2) Toggle on Developer mode (top right)
-    3) Click **Load unpacked** and select the `build/` directory
+## 🧠 How It Works
 
-## Project Structure
-- `public/` — static assets and `manifest.json`
-- `src/` — React app code (UI components, background/service scripts)
-- `vite.config.ts` — Vite config for extension targets
-- `tsconfig.json` — TypeScript config
-- `package.json` — scripts and dependencies
+- The extension tracks time not spent doomscrolling in **1-minute intervals**
+- At **midnight**:
+  - Daily usage resets
+  - Streaks are updated based on goal completion
+  - Weekly data rolls over (Sunday → Monday resets the full week)
+- Optional behavior automatically **pauses blocking** once a daily goal is met
+- All logic runs in the **background service worker** using `chrome.alarms`
 
-## Contributing
-I welcome PRs and issues from the community. To keep reviews smooth:
-- Fork the repo, create a branch (`feat/my-change`), and keep changes focused.
-- Describe user-facing changes and include screenshots/GIFs when UI is affected.
-- For extension behavior changes, note how to reproduce feature/change
+---
+
+## 🛠️ Tech Stack
+
+- **React + TypeScript** – UI and state management  
+- **Tailwind CSS** – Styling  
+- **Chrome Extension APIs** – Storage, alarms, background logic  
+- **Recharts** – Weekly usage visualization  
+
+---
+
+## 📦 Project Structure
+
+```txt
+src/
+├─ background.ts        # Core tracking, reset, and pause logic
+├─ App.tsx              # Main popup UI
+├─ components/          # UI components
+├─ lib/
+│  └─ utils.ts          # Shared utilities/helpers
+└─ utils/
+   └─ storage.ts        # Typed storage helpers
+
+public/
+└─ icons/               # Extension icons
