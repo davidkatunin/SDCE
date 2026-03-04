@@ -89,6 +89,9 @@ function App() {
     const initialMinutes = Math.floor(initialDiff / 60000);
     const initialSeconds = Math.floor((initialDiff % 60000) / 1000);
     setRemainingTime(`${initialMinutes}:${initialSeconds.toString().padStart(2, '0')}`);
+
+    chrome.storage.local.set({ pauseReason: "manual" });
+    setPauseReason("manual");
   
     setPauseEndTime(end);
     setIsPaused(true);
@@ -97,12 +100,68 @@ function App() {
     chrome.storage.local.set({ pauseEndTime: end, isPaused: true });
   };
   
-  const handleResume = () => {
+  const handleResume = (reason: string) => {
+    const autoResume = reason === 'goalMet' || reason === 'pauseFinished';
+    setCodeAction('resume');
+
+    if (autoResume) {
+      finishResume(true);
+      return;
+    }
+
     const randomCode = nanoid(6).toUpperCase();
     setResumeCode(randomCode);
-    setCodeAction('resume');
     setShowCodeEntry(true);
   };
+
+  const handleCodeVerified = (enteredCode: string) => {
+  if (enteredCode !== resumeCode) return;
+
+  if (codeAction === "disable") {
+    setIsEnabled(false);
+    updateStorage({ isEnabled: false });
+    setShowCodeEntry(false);
+    setResumeCode("");
+    setCodeAction(null);
+    return;
+  }
+
+  finishResume();
+};
+
+  const finishResume = (auto = false) => {
+    setShowCodeEntry(false);
+    setResumeCode('');
+    setCodeAction(null);
+
+    setIsPaused(false);
+    setPauseEndTime(null);
+    setRemainingTime('00:00');
+    setPauseReason(null);
+
+    chrome.storage.local.get(
+      ["pauseReason", "minOn", "dailyGoal"],
+      ({ pauseReason, minOn = 0, dailyGoal = 0 }) => {
+        const goalMetNow =
+          typeof minOn === 'number' &&
+          typeof dailyGoal === 'number' &&
+          minOn >= dailyGoal;
+
+        const acknowledged = auto
+          ? true
+          : (pauseReason === "goalMet" || goalMetNow);
+
+        chrome.storage.local.set({
+          isPaused: false,
+          pauseReason: null,
+          goalPauseAcknowledged: acknowledged
+        });
+
+        chrome.storage.local.remove(['pauseEndTime']);
+      }
+    );
+  };
+
 
   const handleToggle = (newValue: boolean) => {
     if (isEnabled && !newValue) {
@@ -115,36 +174,6 @@ function App() {
     }
   };
 
-  const handleCodeVerified = (enteredCode: string) => {
-    if (enteredCode === resumeCode) {
-      setShowCodeEntry(false);
-      const action = codeAction;
-      setResumeCode('');
-      setCodeAction(null);
-
-      if (action === 'resume') {
-        setIsPaused(false);
-        setPauseEndTime(null);
-        setRemainingTime('00:00');
-        setPauseReason(null);
-    
-        chrome.storage.local.get(["pauseReason", "minOn", "dailyGoal"], ({ pauseReason, minOn = 0, dailyGoal = 0 }) => {
-          const goalMetNow = typeof minOn === 'number' && typeof dailyGoal === 'number' && minOn >= dailyGoal;
-          const acknowledged = pauseReason === "goalMet" || goalMetNow;
-    
-          chrome.storage.local.set({
-            isPaused: false,
-            pauseReason: null,
-            goalPauseAcknowledged: acknowledged
-          });
-          chrome.storage.local.remove(['pauseEndTime']);
-        });
-      } else if (action === 'disable') {
-        setIsEnabled(false);
-      }
-    }
-  };
-
   useEffect(() => {
     if (!isPaused || !pauseEndTime) return;
   
@@ -152,7 +181,7 @@ function App() {
       const now = Date.now();
       const diff = pauseEndTime - now;
       if (diff <= 0) {
-        handleResume();
+        handleResume("pauseFinished");
         return;
       }
       const minutes = Math.floor(diff / 60000);
@@ -237,7 +266,7 @@ function App() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleResume}
+                  onClick={() => handleResume('goalMet')}
                   className="h-6 px-2 text-xs text-purple-200 hover:text-white hover:bg-purple-500/10 hover:cursor-pointer"
                 >
                   Resume
@@ -257,7 +286,7 @@ function App() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleResume}
+                    onClick={() => handleResume('Paused')}
                     className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 hover:cursor-pointer"
                   >
                     Resume
