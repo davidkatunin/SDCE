@@ -1,6 +1,7 @@
 import { injectBlockedSiteOverlay } from "@/components/Overlay";
 
 let currentOverlay: HTMLElement | null = null;
+let isNavigatingAway = false;
 
 function removeOverlay() {
   if (currentOverlay) {
@@ -39,6 +40,11 @@ function shouldBlockSite(hostname: string, pathname: string) {
 }
 
 function checkAndInject() {
+  if (isNavigatingAway) {
+    removeOverlay();
+    return;
+  }
+
   safeGet(["isEnabled", "blockedSites", "isPaused"], (data) => {
     const { isEnabled, blockedSites, isPaused } = data;
     if (!isEnabled) {
@@ -60,28 +66,64 @@ function checkAndInject() {
 
     if (shouldBlockSite(hostname, pathname) && !isPaused) {
       if (!currentOverlay) {
+        observer.disconnect(); 
         currentOverlay = injectBlockedSiteOverlay(siteName);
+        observer.observe(document, { subtree: true, childList: true });
       }
     } else {
+      observer.disconnect();
       removeOverlay();
+      observer.observe(document, { subtree: true, childList: true });
     }
   });
+}
+
+const observer = new MutationObserver(() => {
+  if (!isNavigatingAway) {
+    checkAndInject();
+  }
+});
+
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.action === "forceRemoveOverlay") {
+    handleForcedNavigation();
+  }
+});
+
+function handleForcedNavigation() {
+  removeOverlay();
+  isNavigatingAway = true;
+  
+  setTimeout(() => {
+    isNavigatingAway = false;
+    checkAndInject();
+  }, 400);
 }
 
 checkAndInject();
 
 (() => {
-  let lastUrl = location.href;
-  const observer = new MutationObserver(() => {
-    const currentUrl = location.href;
-    if (currentUrl !== lastUrl) {
-      lastUrl = currentUrl;
-      if (chrome?.runtime?.id) {
-        setTimeout(checkAndInject, 250);
-      }
+  window.addEventListener("popstate", handleForcedNavigation);
+  window.addEventListener("hashchange", handleForcedNavigation);
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (
+      target && 
+      (target.innerText?.toLowerCase().includes("back") || 
+       target.innerText?.toLowerCase().includes("cancel") ||
+       target.closest("button")?.innerText?.toLowerCase().includes("back") ||
+       target.closest("button")?.innerText?.toLowerCase().includes("cancel"))
+    ) {
+      handleForcedNavigation();
     }
-  });
+  }, { passive: true });
 
   observer.observe(document, { subtree: true, childList: true });
-  window.addEventListener("beforeunload", () => observer.disconnect());
+
+  window.addEventListener("beforeunload", () => {
+    observer.disconnect();
+    window.removeEventListener("popstate", handleForcedNavigation);
+    window.removeEventListener("hashchange", handleForcedNavigation);
+  });
 })();
