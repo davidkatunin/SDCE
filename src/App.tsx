@@ -109,7 +109,7 @@ function App() {
       return;
     }
 
-    const randomCode = nanoid(6).toUpperCase();
+    const randomCode = nanoid(4).toUpperCase();
     setResumeCode(randomCode);
     setShowCodeEntry(true);
   };
@@ -165,7 +165,7 @@ function App() {
 
   const handleToggle = (newValue: boolean) => {
     if (isEnabled && !newValue) {
-      const randomCode = nanoid(6).toUpperCase();
+      const randomCode = nanoid(4).toUpperCase();
       setResumeCode(randomCode);
       setCodeAction('disable');
       setShowCodeEntry(true);

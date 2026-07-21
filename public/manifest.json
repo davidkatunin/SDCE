@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Stop Doomscrolling Chrome Extension",
   "version": "1.0.0",
-  "description": "An extension to help stop doomscrolling on Chrome",
+  "description": "An extension to help block doomscrolling on Chrome",
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
